@@ -1,6 +1,7 @@
 from flask import Flask, json, request
 from twilio.twiml.messaging_response import MessagingResponse
 from twilio.rest import Client
+import urllib.request as urllib2
 import os
 from dotenv import load_dotenv
 
@@ -19,8 +20,33 @@ def initial_message(sender_phone):
 
     print(message.sid)
 
+action_to_prompt = {
+    "bias_sentiment": "Analyze this link for an article <insert-link-here> for political or ideological bias. Evaluate the tone, sentiment, and framing. Identify any leanings (e.g., left-right, pro-con) and explain your reasoning briefly. Is the content balanced or skewed?. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "source_credibility": "Check the credibility of the source for this article <insert-link-here>. Evaluate the author's expertise, the publication's reputation, and any potential biases. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "alternative_viewpoints": "Find alternative viewpoints for this article <insert-link-here>. Identify at least two different perspectives on the topic and provide a brief summary of each. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "trending_misinformation": "Check for trending misinformation related to this article <insert-link-here>. Identify any viral falsehoods or misleading claims associated with the topic. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "media_consumption_summary": "Analyze the media consumption habits of the user based on the forwarded content. Identify any patterns or biases in the articles shared. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "fact_checked_news_digest": "Provide a fact-checked news digest for the user. Summarize the most important and verified news articles related to the user's interests. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "topic_overview": "Provide an overview of the topic related to this article <insert-link-here>. Summarize the main points and key discussions surrounding the topic. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+}
+
 def process(action, link, sender_phone):
-    text = f"Processing {action} for link: {link}"
+    print(f"Processing {action} for link: {link}")
+
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + os.environ.get('GEMINI_API_KEY')
+    data = {
+        "contents": [{
+            "parts":[{"text": action_to_prompt[action].replace("<insert-link-here>", link)}],
+        }]
+    }
+    headers = {'Content-Type': 'application/json'}
+    req = urllib2.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+    response = urllib2.urlopen(req)
+    response_data = response.read()
+    print("Response from processing:", response_data)
+    response_json = json.loads(response_data)
+    text = response_json['candidates'][0]['content']['parts'][0]['text']
+
 
     message = client.messages.create(
         from_='whatsapp:+14155238886',
