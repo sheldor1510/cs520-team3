@@ -39,7 +39,18 @@ router.post('/userSummary', async (req, res) => {
         return res.status(400).json({ error: 'Phone number is required.' });
     }
 
-    return res.status(200).json({ message: 'Endpoint is working!' });
+    try {
+        const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
+
+        if (interactions.length === 0) {
+            return res.status(404).json({ error: 'No interactions found for this user.' });
+        }
+
+        return res.status(200).json({ message: 'Interactions fetched successfully.', interactions });
+    } catch (error) {
+        console.error('Error fetching interactions:', error.message);
+        return res.status(500).json({ error: 'An error occurred while fetching interactions.' });
+    }
 });
 
 module.exports = router;
