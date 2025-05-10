@@ -21,7 +21,13 @@ router.post('/users', async (req, res) => {
         if (error.code === 11000) {
             return res.status(409).json({ error: 'User with this phone number already exists.' });
         }
-        console.error('Error creating user:', error);
+        console.error('Error creating user:', {
+            name,
+            phoneNumber,
+            error: error.message,
+            stack: error.stack,
+        });
+
         return res.status(500).json({ error: 'An error occurred while creating the user.' });
     }
 });
