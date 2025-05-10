@@ -30,3 +30,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
+
+const User = require('./User');
+const Interaction = require('./Interaction');
