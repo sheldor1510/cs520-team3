@@ -42,15 +42,8 @@ app.get('/findInteractions', async (req, res) => {
       return res.status(400).json({ error: 'Phone number is required' });
     }
 
-    const user = await User.findOne({ phoneNumber });
-
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const interactions = await Interaction.find({ userId: user._id });
+    const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
     res.json(interactions);
-    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
