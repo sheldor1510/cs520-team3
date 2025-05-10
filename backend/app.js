@@ -47,6 +47,25 @@ app.post('/newsFeedDigest', async (req, res) => {
       return res.status(404).json({ message: 'No interactions found for this user.' });
     }
 
+    const topicCounts = {};
+    interactions.forEach(({ prompt, result }) => {
+      const text = `${prompt} ${result}`;
+      const words = text.split(/\W+/);
+      words.forEach(word => {
+        const lower = word.toLowerCase();
+        if (lower.length > 3) {
+          topicCounts[lower] = (topicCounts[lower] || 0) + 1;
+        }
+      });
+    });
+
+    const sortedTopics = Object.entries(topicCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([topic]) => topic);
+
+    res.json({ recommendedTopics: sortedTopics });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
