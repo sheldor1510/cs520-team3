@@ -6,4 +6,8 @@ router.get('/', async (req, res) => {
     return res.status(200).json({ message: 'API is working!' });
 });
 
+router.post('/users', async (req, res) => {
+    return res.status(200).json({ message: 'User creation endpoint is working!' });
+});
+
 module.exports = router;
