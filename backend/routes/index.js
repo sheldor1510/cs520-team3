@@ -46,10 +46,23 @@ router.post('/userSummary', async (req, res) => {
             return res.status(404).json({ error: 'No interactions found for this user.' });
         }
 
-        return res.status(200).json({ message: 'Interactions fetched successfully.', interactions });
+        const summary = interactions.reduce((acc, interaction) => {
+            const { prompt, result } = interaction;
+
+            if (!acc[prompt]) {
+                acc[prompt] = { count: 0, results: [] };
+            }
+
+            acc[prompt].count += 1;
+            acc[prompt].results.push(result);
+
+            return acc;
+        }, {});
+
+        return res.status(200).json({ message: 'Summary generated successfully.', summary });
     } catch (error) {
-        console.error('Error fetching interactions:', error.message);
-        return res.status(500).json({ error: 'An error occurred while fetching interactions.' });
+        console.error('Error generating user summary:', error.message);
+        return res.status(500).json({ error: 'An error occurred while generating the summary.' });
     }
 });
 
