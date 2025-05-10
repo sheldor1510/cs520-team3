@@ -41,6 +41,12 @@ app.post('/newsFeedDigest', async (req, res) => {
       return res.status(400).json({ error: 'Phone number is required' });
     }
 
+    const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
+
+    if (!interactions || interactions.length === 0) {
+      return res.status(404).json({ message: 'No interactions found for this user.' });
+    }
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
