@@ -7,7 +7,13 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/users', async (req, res) => {
-    return res.status(200).json({ message: 'User creation endpoint is working!' });
+    const { name, phoneNumber } = req.body;
+
+    if (!name || !phoneNumber) {
+        return res.status(400).json({ error: 'Name and phone number are required.' });
+    }
+
+    return res.status(200).json({ message: 'Validation passed!' });
 });
 
 module.exports = router;
