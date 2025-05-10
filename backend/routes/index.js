@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
     return res.status(200).json({ message: 'API is working!' });
 });
 
-router.post('/users', async (req, res) => {
+router.post('/addUser', async (req, res) => {
     const { name, phoneNumber } = req.body;
 
     if (!name || !phoneNumber) {
@@ -30,6 +30,16 @@ router.post('/users', async (req, res) => {
 
         return res.status(500).json({ error: 'An error occurred while creating the user.' });
     }
+});
+
+router.post('/userSummary', async (req, res) => {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    return res.status(200).json({ message: 'Endpoint is working!' });
 });
 
 module.exports = router;
