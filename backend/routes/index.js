@@ -18,6 +18,10 @@ router.post('/users', async (req, res) => {
         const savedUser = await newUser.save();
         return res.status(201).json({ message: 'User created successfully.', user: savedUser });
     } catch (error) {
+        if (error.code === 11000) {
+            return res.status(409).json({ error: 'User with this phone number already exists.' });
+        }
+        console.error('Error creating user:', error);
         return res.status(500).json({ error: 'An error occurred while creating the user.' });
     }
 });
