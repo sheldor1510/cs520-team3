@@ -87,4 +87,31 @@ router.post('/newsFeedDigest', async (req, res) => {
     }
 });
 
+router.post('/addInteraction', async (req, res) => {
+    const { userPhoneNumber, prompt, link } = req.body;
+
+    if (!userPhoneNumber || !prompt || !result) {
+        return res.status(400).json({ error: 'User phone number, prompt, and link are required.' });
+    }
+
+    try {
+        // TODO: calculate result from gemini once integrated in backend
+        const result = 'result from gemini'; // Placeholder for the actual result from Gemini
+        const newInteraction = new Interaction({ userPhoneNumber, link, prompt, result });
+        await newInteraction.save();
+        return res.status(201).json({ message: 'Interaction added successfully.' });
+    } catch (error) {
+        console.error('Error adding interaction:', {
+            userPhoneNumber,
+            prompt,
+            link,
+            result,
+            error: error.message,
+            stack: error.stack,
+        });
+
+        return res.status(500).json({ error: 'An error occurred while adding the interaction.' });
+    }
+});
+
 module.exports = router;
