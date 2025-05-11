@@ -46,6 +46,7 @@ router.post('/userSummary', async (req, res) => {
             return res.status(404).json({ error: 'No interactions found for this user.' });
         }
 
+        // Generate a summary of media consumption habits
         const summary = interactions.reduce((acc, interaction) => {
             const { prompt, result } = interaction;
 
@@ -69,5 +70,7 @@ router.post('/userSummary', async (req, res) => {
         return res.status(500).json({ error: 'An error occurred while generating the summary.' });
     }
 });
+
+// integrate this userSummary to the frontend
 
 module.exports = router;
