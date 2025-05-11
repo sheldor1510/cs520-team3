@@ -11,7 +11,7 @@ const interactionSchema = new mongoose.Schema({
   },
   link: {
     type: String,
-    required: false,
+    required: true,
   },
   result: {
     type: String,
