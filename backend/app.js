@@ -30,22 +30,3 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
-
-const User = require('./User');
-const Interaction = require('./Interaction');
-
-app.get('/findInteractions', async (req, res) => {
-  try {
-    const { phoneNumber } = req.query;
-
-    if (!phoneNumber) {
-      return res.status(400).json({ error: 'Phone number is required' });
-    }
-
-    const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
-    res.json(interactions);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});

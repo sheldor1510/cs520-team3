@@ -32,4 +32,20 @@ router.post('/users', async (req, res) => {
     }
 });
 
+router.get('/findInteractions', async (req, res) => {
+    try {
+      const { phoneNumber } = req.query;
+  
+      if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required' });
+      }
+  
+      const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
+      res.json(interactions);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+});
+
 module.exports = router;
