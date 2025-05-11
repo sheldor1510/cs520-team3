@@ -6,7 +6,7 @@ router.get('/', async (req, res) => {
     return res.status(200).json({ message: 'API is working!' });
 });
 
-router.post('/users', async (req, res) => {
+router.post('/addUser', async (req, res) => {
     const { name, phoneNumber } = req.body;
 
     if (!name || !phoneNumber) {
@@ -31,6 +31,47 @@ router.post('/users', async (req, res) => {
         return res.status(500).json({ error: 'An error occurred while creating the user.' });
     }
 });
+
+router.post('/userSummary', async (req, res) => {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+        return res.status(400).json({ error: 'Phone number is required.' });
+    }
+
+    try {
+        const interactions = await Interaction.find({ userPhoneNumber: phoneNumber });
+
+        if (interactions.length === 0) {
+            return res.status(404).json({ error: 'No interactions found for this user.' });
+        }
+
+        // Generate a summary of media consumption habits
+        const summary = interactions.reduce((acc, interaction) => {
+            const { prompt, result } = interaction;
+
+            if (!acc[prompt]) {
+                acc[prompt] = { count: 0, results: [] };
+            }
+
+            acc[prompt].count += 1;
+            acc[prompt].results.push(result);
+
+            return acc;
+        }, {});
+
+        return res.status(200).json({ message: 'Summary generated successfully.', summary });
+    } catch (error) {
+        console.error('Error generating user summary:', {
+            phoneNumber,
+            error: error.message,
+            stack: error.stack,
+        });
+        return res.status(500).json({ error: 'An error occurred while generating the summary.' });
+    }
+});
+
+// integrate this userSummary to the frontend
 
 router.get('/findInteractions', async (req, res) => {
     try {
@@ -113,5 +154,6 @@ router.post('/addInteraction', async (req, res) => {
         return res.status(500).json({ error: 'An error occurred while adding the interaction.' });
     }
 });
+
 
 module.exports = router;
