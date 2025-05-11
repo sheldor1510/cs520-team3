@@ -61,7 +61,11 @@ router.post('/userSummary', async (req, res) => {
 
         return res.status(200).json({ message: 'Summary generated successfully.', summary });
     } catch (error) {
-        console.error('Error generating user summary:', error.message);
+        console.error('Error generating user summary:', {
+            phoneNumber,
+            error: error.message,
+            stack: error.stack,
+        });
         return res.status(500).json({ error: 'An error occurred while generating the summary.' });
     }
 });
