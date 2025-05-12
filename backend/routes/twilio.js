@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
   if (!session[from]) {
     // First message from user asking for name
     session[from] = { state: 'awaiting_name' };
-    twiml.message("Welcome! Please enter your name to begin.");
+    twiml.message("Hi! I'm your assistant for analyzing and fact-checking articles, links, or content you send. To get started, please reply with your name.");
   } else if (session[from].state === 'awaiting_name') {
     // Got their name → call your /addUser route
     const name = body;
