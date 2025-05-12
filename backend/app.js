@@ -21,6 +21,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/', require('./routes/index.js'));
+app.use('/whatsapp', require('./routes/twilio'));
+
 app.use((req, res) => res.status(404).json({ error: 'Not Found' }));
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -30,3 +32,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
+
+
