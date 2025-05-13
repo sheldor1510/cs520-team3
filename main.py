@@ -11,6 +11,8 @@ account_sid = 'ACbc22a3f36e9fd16021d3139f504987a8'
 auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
 client = Client(account_sid, auth_token)
 
+backend_url = 'http://localhost:3000' # Replace with your backend URL
+
 def intro_message(sender_phone):
     message = client.messages.create(
         from_='whatsapp:+14155238886',
@@ -47,9 +49,32 @@ def process(action, link, sender_phone):
     if action == "media_consumption_summary" or action == "fact_checked_news_digest":
         print("No link needed for this action.")
         link = ""
-        # call the endpoint /userSummary to get the user summary string and feed that with the prompt
-        # call the endpoint /newsFeedDigest to get the recommended topics from the user's interaction string and feed that with the prompt
-        prompt = action_to_prompt[action].replace("<api-data>", "This is the data from the API.")
+        data_from_api = ""
+
+        if action == "media_consumption_summary":
+            url = backend_url + "/userSummary"
+            data = {
+                "phoneNumber": global_stuff["user_phone"]
+            }
+            headers = {'Content-Type': 'application/json'}
+            req = urllib2.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+            response = urllib2.urlopen(req)
+            response_data = response.read()
+            response_json = json.loads(response_data)
+            data_from_api = response_json['userSummary']
+        else:
+            url = backend_url + "/newsFeedDigest"
+            data = {
+                "phoneNumber": global_stuff["user_phone"]
+            }
+            headers = {'Content-Type': 'application/json'}
+            req = urllib2.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+            response = urllib2.urlopen(req)
+            response_data = response.read()
+            response_json = json.loads(response_data)
+            data_from_api = response_json['recommendedTopics']
+
+        prompt = action_to_prompt[action].replace("<api-data>", data_from_api)
     else:
         prompt = action_to_prompt[action].replace("<insert-link-here>", link)
 
@@ -67,7 +92,20 @@ def process(action, link, sender_phone):
     response_json = json.loads(response_data)
     text = response_json['candidates'][0]['content']['parts'][0]['text']
 
-    # TODO: send a API request to /addInteraction if its not a summary or digest
+    if action != "media_consumption_summary" and action != "fact_checked_news_digest":
+        url = backend_url + "/addInteraction"
+        data = {
+            "userPhoneNumber": global_stuff["user_phone"],
+            "prompt": action_to_prompt[action],
+            "result": text,
+            "link": link
+        }
+        headers = {'Content-Type': 'application/json'}
+        req = urllib2.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+        response = urllib2.urlopen(req)
+        response_data = response.read()
+        print("Response from /addInteraction:", response_data)
+        
 
     message = client.messages.create(
         from_='whatsapp:+14155238886',
@@ -123,8 +161,21 @@ def bot():
                 global_stuff["user_phone"] = sender_phone
             else:
                 global_stuff["user_name"] = user_msg
-                # TODO: send a API request to /addUser
-                reply = f"Hello {user_msg}! Please provide a link to an article you want to analyze."
+
+                url = backend_url + "/addUser"
+                data = {
+                    "name": global_stuff["user_name"],
+                    "phoneNumber": global_stuff["user_phone"]
+                }
+
+                headers = {'Content-Type': 'application/json'}
+                req = urllib2.Request(url, data=json.dumps(data).encode('utf-8'), headers=headers)
+                response = urllib2.urlopen(req)
+                response_data = response.read()
+                response_json = json.loads(response_data)
+                print("Response from /addUser:", response_json)
+
+                reply = f"Hello {user_msg.title()}! Please provide a link to an article you want to analyze."
         else:
             reply = "Please provide a valid link for an article."
 

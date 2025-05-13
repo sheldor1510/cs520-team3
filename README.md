@@ -12,3 +12,4 @@ Our project is a bias checker built specifically for the use of information spre
 - Install the dependencies for the backend by running `npm install`
 - Make a .env file inside the backend folder with the MongoDB Atlas connection string, API keys, and auth tokens populated (sample .env provided).
 - Run the backend server with `npm run start`
+- Replace the `backend_url` variable in `main.py` with the localhost url of the running server.
