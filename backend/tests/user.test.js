@@ -252,3 +252,20 @@ describe('GET /findInteractions', () => {
     consoleSpy.mockRestore();
   });
 });
+
+describe('POST /newsFeedDigest', () => {
+  it('should return 400 if phone number is missing', async () => {
+    const res = await request(app).post('/newsFeedDigest').send({});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Phone number is required');
+  });
+
+  it('should return 404 if no interactions are found', async () => {
+    const res = await request(app).post('/newsFeedDigest').send({
+      phoneNumber: '+33333333333',
+    });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('message', 'No interactions found for this user.');
+  });
+})
