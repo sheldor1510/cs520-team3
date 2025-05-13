@@ -60,7 +60,13 @@ router.post('/userSummary', async (req, res) => {
             return acc;
         }, {});
 
-        return res.status(200).json({ message: 'Summary generated successfully.', summary });
+        let formattedSummaryString = ""
+
+        Object.entries(summary).map(([prompt, { count, results }]) => {
+            formattedSummaryString += `Prompt: ${prompt}\nCount: ${count}\nResults:\n${results.join('\n')}\n\n`;
+        });
+
+        return res.status(200).json({ message: 'Summary generated successfully.', userSummary: formattedSummaryString });
     } catch (error) {
         console.error('Error generating user summary:', {
             phoneNumber,
@@ -116,8 +122,14 @@ router.post('/newsFeedDigest', async (req, res) => {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([topic]) => topic);
-  
-      res.json({ recommendedTopics: sortedTopics });
+      
+      let formattedTopicsString = "";
+
+      sortedTopics.forEach((topic, index) => {
+        formattedTopicsString += `${index + 1}. ${topic}\n`;
+      });
+
+      res.json({ recommendedTopics: formattedTopicsString });
       
     } catch (err) {
       console.error(err);

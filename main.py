@@ -11,7 +11,16 @@ account_sid = 'ACbc22a3f36e9fd16021d3139f504987a8'
 auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
 client = Client(account_sid, auth_token)
 
-def initial_message(sender_phone):
+def intro_message(sender_phone):
+    message = client.messages.create(
+        from_='whatsapp:+14155238886',
+        content_sid='HX141777805ee7ebdb20216338433a78e6',
+        to=sender_phone
+    )
+
+    print(message.sid)
+
+def link_message(sender_phone):
     message = client.messages.create(
         from_='whatsapp:+14155238886',
         content_sid='HX5693ebba77c23045a56f41c876bc1ebe',
@@ -25,18 +34,29 @@ action_to_prompt = {
     "source_credibility": "Check the credibility of the source for this article <insert-link-here>. Evaluate the author's expertise, the publication's reputation, and any potential biases. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
     "alternative_viewpoints": "Find alternative viewpoints for this article <insert-link-here>. Identify at least two different perspectives on the topic and provide a brief summary of each. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
     "trending_misinformation": "Check for trending misinformation related to this article <insert-link-here>. Identify any viral falsehoods or misleading claims associated with the topic. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
-    "media_consumption_summary": "Analyze the media consumption habits of the user based on the forwarded content. Identify any patterns or biases in the articles shared. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
-    "fact_checked_news_digest": "Provide a fact-checked news digest for the user. Summarize the most important and verified news articles related to the user's interests. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
+    "media_consumption_summary": "Analyze the media consumption habits of the user based on the forwarded content. Identify any patterns or biases in the articles shared. Provide a brief summary of your findings. Keep the response under 1500 characters. Bold words are single asterisk *word*. <api-data>",
+    "fact_checked_news_digest": "Provide a fact-checked news digest for the user. Analyze based on the topics of the articles they mostly reads about. Keep the response under 1500 characters. Bold words are single asterisk *word*. <api-data>",
     "topic_overview": "Provide an overview of the topic related to this article <insert-link-here>. Summarize the main points and key discussions surrounding the topic. Keep the response under 1500 characters. Bold words are single asterisk *word*.",
 }
 
 def process(action, link, sender_phone):
     print(f"Processing {action} for link: {link}")
 
+    prompt = ""
+
+    if action == "media_consumption_summary" or action == "fact_checked_news_digest":
+        print("No link needed for this action.")
+        link = ""
+        # call the endpoint /userSummary to get the user summary string and feed that with the prompt
+        # call the endpoint /newsFeedDigest to get the recommended topics from the user's interaction string and feed that with the prompt
+        prompt = action_to_prompt[action].replace("<api-data>", "This is the data from the API.")
+    else:
+        prompt = action_to_prompt[action].replace("<insert-link-here>", link)
+
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + os.environ.get('GEMINI_API_KEY')
     data = {
         "contents": [{
-            "parts":[{"text": action_to_prompt[action].replace("<insert-link-here>", link)}],
+            "parts":[{"text": prompt }],
         }]
     }
     headers = {'Content-Type': 'application/json'}
@@ -47,7 +67,7 @@ def process(action, link, sender_phone):
     response_json = json.loads(response_data)
     text = response_json['candidates'][0]['content']['parts'][0]['text']
 
-    # TODO: send a API request to /addInteraction
+    # TODO: send a API request to /addInteraction if its not a summary or digest
 
     message = client.messages.create(
         from_='whatsapp:+14155238886',
@@ -59,14 +79,6 @@ def process(action, link, sender_phone):
 
 global_stuff = {
     "last_link_provided": "",
-    "option_selected": "",
-    "bias_sentiment": "",
-    "source_credibility": "",
-    "alternative_viewpoints": "",
-    "trending_misinformation": "",
-    "media_consumption_summary": "",
-    "fact_checked_news_digest": "",
-    "topic_overview": "",
     "user_name": "",
     "user_phone": "",
 }
@@ -103,13 +115,16 @@ def bot():
                 break
         reply = "Please choose an option that you want to perform on the article link you provided.\n\n"
         global_stuff["last_link_provided"] = link
-        initial_message(sender_phone)
+        link_message(sender_phone)
     else:
         if global_stuff["user_name"] == "":
-            global_stuff["user_name"] = user_msg
-            global_stuff["user_phone"] = sender_phone
-            # TODO: send a API request to /addUser
-            reply = f"Hello {user_msg}! Please provide a link to an article you want to analyze."
+            if global_stuff["user_phone"] == "":
+                intro_message(sender_phone)
+                global_stuff["user_phone"] = sender_phone
+            else:
+                global_stuff["user_name"] = user_msg
+                # TODO: send a API request to /addUser
+                reply = f"Hello {user_msg}! Please provide a link to an article you want to analyze."
         else:
             reply = "Please provide a valid link for an article."
 
