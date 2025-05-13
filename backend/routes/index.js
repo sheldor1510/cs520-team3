@@ -71,8 +71,6 @@ router.post('/userSummary', async (req, res) => {
     }
 });
 
-// integrate this userSummary to the frontend
-
 router.get('/findInteractions', async (req, res) => {
     try {
       const { phoneNumber } = req.query;
@@ -104,9 +102,8 @@ router.post('/newsFeedDigest', async (req, res) => {
       }
   
       const topicCounts = {};
-      interactions.forEach(({ prompt, result }) => {
-        const text = `${prompt} ${result}`;
-        const words = text.split(/\W+/);
+      interactions.forEach(({ result }) => {
+        const words = result.split(/\W+/);
         words.forEach(word => {
           const lower = word.toLowerCase();
           if (lower.length > 3) {
@@ -129,15 +126,13 @@ router.post('/newsFeedDigest', async (req, res) => {
 });
 
 router.post('/addInteraction', async (req, res) => {
-    const { userPhoneNumber, prompt, link } = req.body;
+    const { userPhoneNumber, prompt, link, result } = req.body;
 
     if (!userPhoneNumber || !prompt || !result) {
         return res.status(400).json({ error: 'User phone number, prompt, and link are required.' });
     }
 
     try {
-        // TODO: calculate result from gemini once integrated in backend
-        const result = 'result from gemini'; // Placeholder for the actual result from Gemini
         const newInteraction = new Interaction({ userPhoneNumber, link, prompt, result });
         await newInteraction.save();
         return res.status(201).json({ message: 'Interaction added successfully.' });

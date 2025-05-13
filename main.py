@@ -14,7 +14,7 @@ client = Client(account_sid, auth_token)
 def initial_message(sender_phone):
     message = client.messages.create(
         from_='whatsapp:+14155238886',
-        content_sid='HX041b223d999db074d59bfc72e16cb1b2',
+        content_sid='HX5693ebba77c23045a56f41c876bc1ebe',
         to=sender_phone
     )
 
@@ -47,6 +47,7 @@ def process(action, link, sender_phone):
     response_json = json.loads(response_data)
     text = response_json['candidates'][0]['content']['parts'][0]['text']
 
+    # TODO: send a API request to /addInteraction
 
     message = client.messages.create(
         from_='whatsapp:+14155238886',
@@ -66,6 +67,8 @@ global_stuff = {
     "media_consumption_summary": "",
     "fact_checked_news_digest": "",
     "topic_overview": "",
+    "user_name": "",
+    "user_phone": "",
 }
 
 app = Flask(__name__)
@@ -102,7 +105,13 @@ def bot():
         global_stuff["last_link_provided"] = link
         initial_message(sender_phone)
     else:
-        reply = "Please provide a valid link for an article."
+        if global_stuff["user_name"] == "":
+            global_stuff["user_name"] = user_msg
+            global_stuff["user_phone"] = sender_phone
+            # TODO: send a API request to /addUser
+            reply = f"Hello {user_msg}! Please provide a link to an article you want to analyze."
+        else:
+            reply = "Please provide a valid link for an article."
 
     response = MessagingResponse()
     response.message(reply)
