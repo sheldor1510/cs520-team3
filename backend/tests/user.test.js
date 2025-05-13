@@ -316,3 +316,16 @@ describe('POST /newsFeedDigest', () => {
   });
 
 })
+
+describe('POST /addInteraction', () => {
+  it('should return 400 if required fields are missing', async () => {
+    const res = await request(app).post('/addInteraction').send({
+      userPhoneNumber: '+1234567890',
+      prompt: 'bias_sentiment',
+      // missing result
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'User phone number, prompt, and link are required.');
+  });
+});
