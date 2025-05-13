@@ -1,0 +1,112 @@
+const request = require('supertest');
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const app = require('../app'); // Import the app to test the endpoint
+require('dotenv').config();
+
+let connection;
+
+beforeAll(async () => {
+  // Use a separate connection for testing
+  const MONGO_URI = process.env.TEST_DB_URI; // Use the test database URI
+  connection = await mongoose.createConnection(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+
+  // Set the connection for the User model
+  mongoose.connection = connection;
+});
+
+beforeEach(async () => {
+  // Clear the User collection before each test
+  await User.deleteMany({});
+});
+
+afterAll(async () => {
+  // Drop the test database and close the connection
+  await connection.dropDatabase();
+  await connection.close();
+});
+
+describe('POST /addUser', () => {
+  it('should create a new user with valid input', async () => {
+    const res = await request(app)
+      .post('/addUser')
+      .send({
+        name: 'Test User',
+        phoneNumber: '+1234567890',
+      });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('message', 'User created successfully.');
+    expect(res.body.user).toHaveProperty('name', 'Test User');
+    expect(res.body.user).toHaveProperty('phoneNumber', '+1234567890');
+  });
+
+  it('should return 400 if required fields are missing', async () => {
+    const res = await request(app)
+      .post('/addUser')
+      .send({ name: 'Missing Phone Number' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Name and phone number are required.');
+  });
+
+  it('should return 409 if phone number already exists', async () => {
+    // Create a user with the same phone number
+    await request(app)
+      .post('/addUser')
+      .send({
+        name: 'Existing User',
+        phoneNumber: '+1234567890',
+      });
+
+    // Attempt to create another user with the same phone number
+    const res = await request(app)
+      .post('/addUser')
+      .send({
+        name: 'Duplicate User',
+        phoneNumber: '+1234567890',
+      });
+
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toHaveProperty('error', 'User with this phone number already exists.');
+  });
+
+  it('should return 500 and log error if saving user fails', async () => {
+    // Spy on console.error to confirm it logs
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Force User.prototype.save to throw
+    const saveMock = jest
+      .spyOn(User.prototype, 'save')
+      .mockImplementationOnce(() => {
+        throw new Error('Simulated DB failure');
+      });
+
+    const res = await request(app)
+      .post('/addUser')
+      .send({
+        name: 'Failing User',
+        phoneNumber: '+19999999999',
+      });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error', 'An error occurred while creating the user.');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error creating user:',
+      expect.objectContaining({
+        name: 'Failing User',
+        phoneNumber: '+19999999999',
+        error: 'Simulated DB failure',
+        stack: expect.any(String)
+      })
+    );
+
+    // Clean up mocks
+    consoleSpy.mockRestore();
+    saveMock.mockRestore();
+  });
+
+});
