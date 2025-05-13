@@ -8,3 +8,7 @@ Our project is a bias checker built specifically for the use of information spre
 - Install the dependencies with `pip3 install -r requirements.txt`
 - Make a .env file with the actual API keys and auth tokens populated (sample .env provided).
 - Run the main python file to start the bot with `python3 main.py`
+- Go into the backend folder with `cd backend`
+- Install the dependencies for the backend by running `npm install`
+- Make a .env file inside the backend folder with the MongoDB Atlas connection string, API keys, and auth tokens populated (sample .env provided).
+- Run the backend server with `npm run start`
