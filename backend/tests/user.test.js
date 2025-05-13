@@ -268,4 +268,33 @@ describe('POST /newsFeedDigest', () => {
     expect(res.statusCode).toBe(404);
     expect(res.body).toHaveProperty('message', 'No interactions found for this user.');
   });
+
+  it('should return recommended topics based on interaction results', async () => {
+    const phoneNumber = '+44444444444';
+
+    await Interaction.create([
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'bias_sentiment',
+        link: 'https://example.com/1',
+        result: 'Climate change policy is controversial and debated',
+      },
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'bias_sentiment',
+        link: 'https://example.com/2',
+        result: 'Policy experts disagree on climate change impact',
+      },
+    ]);
+
+    const res = await request(app).post('/newsFeedDigest').send({ phoneNumber });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('recommendedTopics');
+    expect(Array.isArray(res.body.recommendedTopics)).toBe(true);
+    expect(res.body.recommendedTopics.length).toBeGreaterThan(0);
+    expect(res.body.recommendedTopics).toContain('climate');
+    expect(res.body.recommendedTopics).toContain('policy');
+  });
+
 })
