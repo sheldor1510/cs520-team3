@@ -194,3 +194,61 @@ describe('POST /userSummary', () => {
     consoleSpy.mockRestore();
   });
 });
+
+
+describe('GET /findInteractions', () => {
+  it('should return 400 if phone number is missing', async () => {
+    const res = await request(app).get('/findInteractions');
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Phone number is required');
+  });
+
+  it('should return an empty array if no interactions are found', async () => {
+    const res = await request(app).get('/findInteractions').query({
+      phoneNumber: '+00000000000',
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBe(0);
+  });
+
+  it('should return a list of interactions for a valid phone number', async () => {
+    const phoneNumber = '+11111111111';
+
+    await Interaction.create([
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'bias_sentiment',
+        link: 'https://example.com/news',
+        result: 'Neutral',
+      },
+    ]);
+
+    const res = await request(app).get('/findInteractions').query({ phoneNumber });
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBe(1);
+    expect(res.body[0]).toHaveProperty('userPhoneNumber', phoneNumber);
+    expect(res.body[0]).toHaveProperty('result', 'Neutral');
+  });
+
+  it('should return 500 and log error if Interaction.find fails', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const findMock = jest.spyOn(Interaction, 'find').mockImplementationOnce(() => {
+      throw new Error('Simulated DB failure');
+    });
+
+    const res = await request(app).get('/findInteractions').query({
+      phoneNumber: '+22222222222',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Server error');
+    expect(consoleSpy).toHaveBeenCalled();
+
+    findMock.mockRestore();
+    consoleSpy.mockRestore();
+  });
+});
