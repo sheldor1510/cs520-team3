@@ -297,4 +297,22 @@ describe('POST /newsFeedDigest', () => {
     expect(res.body.recommendedTopics).toContain('policy');
   });
 
+  it('should return 500 and log error if Interaction.find fails', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const findMock = jest.spyOn(Interaction, 'find').mockImplementationOnce(() => {
+      throw new Error('Simulated DB failure');
+    });
+
+    const res = await request(app).post('/newsFeedDigest').send({
+      phoneNumber: '+55555555555',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error', 'Server error');
+    expect(consoleSpy).toHaveBeenCalled();
+
+    findMock.mockRestore();
+    consoleSpy.mockRestore();
+  });
+
 })
