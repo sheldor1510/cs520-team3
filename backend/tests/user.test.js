@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const app = require('../app'); // Import the app to test the endpoint
 require('dotenv').config();
+const Interaction = require('../models/Interaction');
 
 let connection;
 
@@ -109,4 +110,87 @@ describe('POST /addUser', () => {
     saveMock.mockRestore();
   });
 
+});
+
+describe('POST /userSummary', () => {
+  it('should return 400 if phone number is missing', async () => {
+    const res = await request(app).post('/userSummary').send({});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Phone number is required.');
+  });
+
+  it('should return 404 if no interactions are found', async () => {
+    const res = await request(app).post('/userSummary').send({
+      phoneNumber: '+00000000000',
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('error', 'No interactions found for this user.');
+  });
+
+  it('should return 200 and a correct summary if interactions exist', async () => {
+    const phoneNumber = '+99999999999';
+
+    await Interaction.create([
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'source_check',
+        link: 'https://example.com/a',
+        result: 'Credible',
+      },
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'source_check',
+        link: 'https://example.com/b',
+        result: 'Some bias detected',
+      },
+      {
+        userPhoneNumber: phoneNumber,
+        prompt: 'bias_sentiment',
+        link: 'https://example.com/c',
+        result: 'Leaning left',
+      },
+    ]);
+
+    const res = await request(app)
+      .post('/userSummary')
+      .send({ phoneNumber });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Summary generated successfully.');
+    expect(res.body.summary).toMatchObject({
+      source_check: {
+        count: 2,
+        results: expect.arrayContaining(['Credible', 'Some bias detected']),
+      },
+      bias_sentiment: {
+        count: 1,
+        results: ['Leaning left'],
+      },
+    });
+  });
+
+  it('should return 500 and log error if Interaction.find throws', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const findMock = jest.spyOn(Interaction, 'find').mockImplementationOnce(() => {
+      throw new Error('Simulated DB failure');
+    });
+
+    const res = await request(app).post('/userSummary').send({
+      phoneNumber: '+88888888888',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error', 'An error occurred while generating the summary.');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error generating user summary:',
+      expect.objectContaining({
+        phoneNumber: '+88888888888',
+        error: 'Simulated DB failure',
+        stack: expect.any(String),
+      })
+    );
+
+    findMock.mockRestore();
+    consoleSpy.mockRestore();
+  });
 });
