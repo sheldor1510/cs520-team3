@@ -328,4 +328,50 @@ describe('POST /addInteraction', () => {
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty('error', 'User phone number, prompt, and link are required.');
   });
+
+  it('should add an interaction with valid input', async () => {
+    const res = await request(app).post('/addInteraction').send({
+      userPhoneNumber: '+1234567890',
+      prompt: 'source_check',
+      link: 'https://example.com',
+      result: 'Credible',
+    });
+  
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('message', 'Interaction added successfully.');
+  });
+   
+  it('should return 500 and log error if saving interaction fails', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const saveMock = jest.spyOn(Interaction.prototype, 'save').mockImplementationOnce(() => {
+      throw new Error('Simulated DB failure');
+    });
+
+    const res = await request(app).post('/addInteraction').send({
+      userPhoneNumber: '+1234567890',
+      prompt: 'bias_sentiment',
+      link: 'https://fake.com',
+      result: 'Some bias detected',
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toHaveProperty('error', 'An error occurred while adding the interaction.');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Error adding interaction:',
+      expect.objectContaining({
+        userPhoneNumber: '+1234567890',
+        prompt: 'bias_sentiment',
+        link: 'https://fake.com',
+        result: 'Some bias detected',
+        error: 'Simulated DB failure',
+        stack: expect.any(String),
+      })
+    );
+
+    consoleSpy.mockRestore();
+    saveMock.mockRestore();
+  });
+
+
 });
+
